@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.conversation_comment
+    - field.field.comment.conversation_comment.comment_body
+  module:
+    - text
+id: comment.conversation_comment.default
+targetEntityType: comment
+bundle: conversation_comment
+mode: default
+content:
+  comment_body:
+    label: hidden
+    type: text_default
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+    region: content
+hidden:
+  links: true
+  private_message_link: true

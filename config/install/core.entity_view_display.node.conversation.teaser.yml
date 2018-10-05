@@ -1,0 +1,40 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_display.comment.conversation_comment.default
+    - core.entity_view_mode.node.teaser
+    - field.field.node.conversation.field_conversation_comment
+    - field.field.node.conversation.field_recipient
+    - field.storage.node.field_recipient
+    - node.type.conversation
+  module:
+    - comment
+    - user
+id: node.conversation.teaser
+targetEntityType: node
+bundle: conversation
+mode: teaser
+content:
+  field_conversation_comment:
+    type: comment_default
+    weight: 1
+    region: content
+    label: hidden
+    settings:
+      view_mode: default
+      pager_id: 0
+    third_party_settings: {  }
+  field_recipient:
+    type: entity_reference_entity_view
+    weight: 0
+    region: content
+    label: hidden
+    settings:
+      view_mode: compact
+      link: false
+    third_party_settings: {  }
+hidden:
+  links: true
+  private_message_link: true
+  share_everywhere: true

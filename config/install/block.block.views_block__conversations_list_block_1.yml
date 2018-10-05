@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.conversations_list
+  module:
+    - views
+  theme:
+    - prototype_theme
+id: views_block__conversations_list_block_1
+theme: prototype_theme
+region: sidebar
+weight: 0
+provider: null
+plugin: 'views_block:conversations_list-block_1'
+settings:
+  id: 'views_block:conversations_list-block_1'
+  label: ''
+  provider: views
+  label_display: visible
+  views_label: ''
+  items_per_page: none
+visibility: {  }

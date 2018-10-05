@@ -1,0 +1,179 @@
+<?php
+
+function drupal_conversations_theme($existing, $type, $theme, $path) {
+    
+    return [
+        'node__conversation' => [
+          'template' => 'node--conversation',
+          'base hook' => 'node',
+        ],
+        'node__conversation__teaser' => [
+          'template' => 'node--conversation--teaser',
+          'base hook' => 'node',
+        ],
+        'node__conversation__token' => [
+          'template' => 'node--conversation--token',
+          'base hook' => 'node',
+        ],
+        'field__field_conversation_comment' => [
+          'template' => 'field--field-conversation-comment',
+          'base hook' => 'field',
+        ],
+        'field__field_recipient' => [
+          'template' => 'field--field-recipient',
+          'base hook' => 'field',
+        ],
+        'comment__field_conversation_comment' => [
+          'template' => 'comment--field-conversation-comment',
+          'base hook' => 'field',
+        ],
+      ];
+    
+}
+
+
+
+
+
+
+
+
+
+function drupal_conversations_preprocess_node(&$variables) {
+
+    //Check if this node is of type 'Conversation'
+    if ($variables['node']->bundle() == 'conversation') {
+        
+        $currentUserUID = \Drupal::currentUser()->id();
+        $recipients = $variables['node']->get('field_recipient')->getValue();
+        $conversationUserList = array();
+        
+        foreach ($recipients as $recipient) {
+            
+            if ($recipient['target_id'] != $currentUserUID) {
+                $conversationUserList[] = $recipient['target_id'];
+            }
+            
+        }
+        
+        if ($recipient['target_id'] != $currentUserUID) {
+            $conversationUserList[] = $variables['node']->getOwnerId();
+        }
+        
+        $variables['conversationUserList'] = $conversationUserList;
+    }
+            
+}
+
+
+
+
+
+
+
+
+
+// Controll access to conversation nodes to those who created the node or are referenced to the node
+use Drupal\Core\Access\AccessResult;
+
+function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
+    
+    //Check if this node is of type 'Conversation'
+    if ($node->bundle() == 'conversation' || $node->bundle() == 'conversation__teaser') {
+        $recipients = $node->get('field_recipient')->getValue();
+        $currentUserID = \Drupal::currentUser()->id();
+
+        //Check if there are recipients
+        if (!empty($recipients)) {
+
+            foreach ($recipients as $recipient) {
+
+                //Validate referenced users ID's, and node owner ID, to allow access
+                if ($recipient['target_id'] == $account->id() || $currentUserID == $node->getOwnerId()) {
+                    return AccessResult::allowed()->cachePerUser()->cacheUntilEntityChanges($node);
+                }
+
+            }
+
+        }
+
+        //Deny access
+        return AccessResult::forbidden()->cachePerUser()->cacheUntilEntityChanges($node);
+
+    }
+
+    //Not a Conversation node, proceed with normal access permissions
+    return AccessResult::neutral();
+    
+}
+
+
+
+
+
+
+
+
+
+function drupal_conversations_form_node_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+
+    $nodeAddForm = $form_state->getFormObject()->getEntity();
+    
+    if ($nodeAddForm->isNew() && $form_id == 'node_conversation_form') {
+
+        //Add custom form elements
+        $form['drupal_conversations_heading'] = [
+            '#type' => 'item',
+            '#weight' => -10,
+            '#markup' => t('<h2>Add recipient(s), then start your conversation.</h2>'),
+        ];
+        
+        //Call the node_builder function
+        $form['title']['#access'] = FALSE;
+        $form['#entity_builders'][] = 'drupal_conversations_node_builder';
+        
+        //Change the submit button text
+        if ( isset($form['actions']['submit']) ) {
+           $form['actions']['submit']['#value'] = t('Start Conversation');
+        }
+        
+        if ( isset($form['field_recipient']['widget']['add_more']['#value']) ) {
+           $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
+        }
+                
+    }
+    else {
+        // This is not a new node.
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+function drupal_conversations_node_builder($entity_type, \Drupal\node\NodeInterface $node, $form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    
+    $recipients = $node->field_recipient->getValue();
+    $recipientIDList = '';
+    foreach ($recipients as $recipient) {
+        $recipientIDList .= '_' . $recipient['target_id'];
+    }
+    
+    $node->setTitle('conversation_' . \Drupal::currentUser()->id() . $recipientIDList);
+
+}
+
+
+
+
+
+
+
+
+
+?>
