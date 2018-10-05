@@ -51,16 +51,17 @@ function drupal_conversations_preprocess_node(&$variables) {
         foreach ($recipients as $recipient) {
             
             if ($recipient['target_id'] != $currentUserUID) {
-                $conversationUserList[] = $recipient['target_id'];
+                $conversationUserList[] = \Drupal\user\Entity\User::load($recipient['target_id']);
             }
             
         }
         
         if ($recipient['target_id'] != $currentUserUID) {
-            $conversationUserList[] = $variables['node']->getOwnerId();
+            $conversationUserList[] = \Drupal\user\Entity\User::load($variables['node']->getOwnerId());
         }
-        
+        kpr($conversationUserList);
         $variables['conversationUserList'] = $conversationUserList;
+        
     }
             
 }
@@ -79,7 +80,7 @@ use Drupal\Core\Access\AccessResult;
 function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
     
     //Check if this node is of type 'Conversation'
-    if ($node->bundle() == 'conversation' || $node->bundle() == 'conversation__teaser') {
+    if ($node->bundle() == 'conversation') {
         $recipients = $node->get('field_recipient')->getValue();
         $currentUserID = \Drupal::currentUser()->id();
 
@@ -90,6 +91,7 @@ function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op,
 
                 //Validate referenced users ID's, and node owner ID, to allow access
                 if ($recipient['target_id'] == $account->id() || $currentUserID == $node->getOwnerId()) {
+                    /**** Problem: Views ignores this access restriciton. Need to extend ****/
                     return AccessResult::allowed()->cachePerUser()->cacheUntilEntityChanges($node);
                 }
 
