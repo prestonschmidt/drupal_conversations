@@ -1,5 +1,10 @@
 <?php
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Form\FormStateInterface;
+
 function drupal_conversations_theme($existing, $type, $theme, $path) {
     
     return [
@@ -49,18 +54,18 @@ function drupal_conversations_preprocess_node(&$variables) {
         $conversationUserList = array();
         
         foreach ($recipients as $recipient) {
-            
+
             if ($recipient['target_id'] != $currentUserUID) {
                 $conversationUserList[] = \Drupal\user\Entity\User::load($recipient['target_id']);
             }
             
         }
         
-        if ($recipient['target_id'] != $currentUserUID) {
+        if ($variables['node']->getOwnerId() != $currentUserUID) {
             $conversationUserList[] = \Drupal\user\Entity\User::load($variables['node']->getOwnerId());
         }
-        kpr($conversationUserList);
-        $variables['conversationUserList'] = $conversationUserList;
+
+        $variables['conversationUserList'] = \Drupal::entityTypeManager()->getViewBuilder('user')->viewMultiple($conversationUserList, 'compact');
         
     }
             
@@ -74,9 +79,98 @@ function drupal_conversations_preprocess_node(&$variables) {
 
 
 
-// Controll access to conversation nodes to those who created the node or are referenced to the node
-use Drupal\Core\Access\AccessResult;
+//** Ensure only the node owner and referenced users can access Conversation entities
+//** Adds rows to the "node_access" table
+function drupal_conversations_node_access_records(NodeInterface $node) {
+    
+    //Check if this node is of type 'Conversation'
+    if ($node->bundle() == 'conversation') {
+        
+        //Get referenced users
+        $recipients = $node->get('field_recipient')->getValue();
+        $grants = array();
+        
+        if ($node->isPublished()) {
+            
+            foreach ($recipients as $recipient) {
 
+                //Create "view" access for referenced users
+                $grants[] = array(
+                    'realm' => 'drupal_conversations',
+                    'gid' => $recipient['target_id'],
+                    'grant_view' => 1,
+                    'grant_update' => 0,
+                    'grant_delete' => 0,
+                    'langcode' => 'en',
+                );
+
+            }
+            
+        }
+        
+        if ($node->getOwnerId()) {
+            //Create "view and update" access for node owner
+            $grants[] = array(
+                'realm' => 'drupal_conversations_owner',
+                'gid' => $node->getOwnerId(),
+                'grant_view' => 1,
+                'grant_update' => 1,
+                'grant_delete' => 0,
+                'langcode' => 'en',
+            );
+        }
+        
+        //Create "full" access for administrator
+        $grants[] = array(
+            'realm' => 'drupal_conversations_admin',
+            'gid' => 0, // This is the admin GID, not the $account->uid associated with anonymous
+            'grant_view' => 1,
+            'grant_update' => 1,
+            'grant_delete' => 1,
+            'langcode' => 'en',
+        );
+        
+        return $grants;
+
+    }
+ 
+}
+
+function drupal_conversations_node_grants(AccountInterface $account, $op) {
+    
+    $grants = array();
+    
+    //Apply view access to referenced users
+    $grants['drupal_conversations'] = array(
+        $account->id(),
+    );
+    
+    //Apply view and update access to node owner
+    $grants['drupal_conversations_owner'] = array(
+        $account->id(),
+    );
+    
+    //Always give administrator full access
+    if (in_array('administrator', $account->getRoles())) {
+        // gid to view, update, delete
+        $grants['drupal_conversations_admin'][] = 0;
+        return $grants;
+    }
+    
+    return $grants;
+    
+}
+
+
+
+
+
+
+
+
+
+// Extra safeguard. Controll access to conversation nodes to those who created the node or are referenced to the node
+/**** Problem: Views ignores HOOK_node_access(). This is just a backup ****/
 function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
     
     //Check if this node is of type 'Conversation'
@@ -91,7 +185,6 @@ function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op,
 
                 //Validate referenced users ID's, and node owner ID, to allow access
                 if ($recipient['target_id'] == $account->id() || $currentUserID == $node->getOwnerId()) {
-                    /**** Problem: Views ignores this access restriciton. Need to extend ****/
                     return AccessResult::allowed()->cachePerUser()->cacheUntilEntityChanges($node);
                 }
 
@@ -117,7 +210,7 @@ function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op,
 
 
 
-function drupal_conversations_form_node_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
     $nodeAddForm = $form_state->getFormObject()->getEntity();
     
@@ -134,13 +227,14 @@ function drupal_conversations_form_node_form_alter(&$form, \Drupal\Core\Form\For
         $form['title']['#access'] = FALSE;
         $form['#entity_builders'][] = 'drupal_conversations_node_builder';
         
+        //Change the add user button text
+        if ( isset($form['field_recipient']['widget']['add_more']['#value']) ) {
+           $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
+        }
+        
         //Change the submit button text
         if ( isset($form['actions']['submit']) ) {
            $form['actions']['submit']['#value'] = t('Start Conversation');
-        }
-        
-        if ( isset($form['field_recipient']['widget']['add_more']['#value']) ) {
-           $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
         }
                 
     }
@@ -158,7 +252,7 @@ function drupal_conversations_form_node_form_alter(&$form, \Drupal\Core\Form\For
 
 
 
-function drupal_conversations_node_builder($entity_type, \Drupal\node\NodeInterface $node, $form, \Drupal\Core\Form\FormStateInterface $form_state) {
+function drupal_conversations_node_builder($entity_type, NodeInterface $node, $form, FormStateInterface $form_state) {
     
     $recipients = $node->field_recipient->getValue();
     $recipientIDList = '';

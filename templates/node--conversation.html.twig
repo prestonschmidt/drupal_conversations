@@ -2,13 +2,7 @@
 
     <div class="conversation-members">
         
-        {% if currentUserUID == conversationOwner %}
-            {{ content.field_recipient }}
-        {% else %}
-            {{ author_picture }}
-        {% endif %}
-        
-        {{conversationUserList | render}}
+        {{ conversationUserList }}
         
     </div>
 
