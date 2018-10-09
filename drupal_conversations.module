@@ -1,9 +1,43 @@
 <?php
 
+/**
+ ** This module extends the comment module into a private message system. Uses basic drupal core entities.
+ **/
+
 use Drupal\Core\Access\AccessResult;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
+
+
+
+
+
+
+
+
+
+/**
+ ** Add our styles library.
+**/
+
+function drupal_conversations_preprocess_page(&$variables) {
+    
+    $variables['#attached']['library'][] = 'drupal_conversations/styles';
+    
+}
+
+
+
+
+
+
+
+
+
+/**
+ ** This adds the template files we need to our theme.
+**/
 
 function drupal_conversations_theme($existing, $type, $theme, $path) {
     
@@ -44,6 +78,11 @@ function drupal_conversations_theme($existing, $type, $theme, $path) {
 
 
 
+/**
+ ** Build array of users associated to this node and filter out the current user, then build a printable array.
+ ** This will allow us to render our conversation users in our twig templates.
+**/
+
 function drupal_conversations_preprocess_node(&$variables) {
 
     //Check if this node is of type 'Conversation'
@@ -79,8 +118,11 @@ function drupal_conversations_preprocess_node(&$variables) {
 
 
 
-//** Ensure only the node owner and referenced users can access Conversation entities
-//** Adds rows to the "node_access" table
+/** 
+ ** Ensure only the node owner and referenced users can access Conversation entities.
+ ** Adds rows to the "node_access" database table.
+ ** Realm and GID are arbitrary, they just need to match with the node grants below.
+**/
 function drupal_conversations_node_access_records(NodeInterface $node) {
     
     //Check if this node is of type 'Conversation'
@@ -136,6 +178,7 @@ function drupal_conversations_node_access_records(NodeInterface $node) {
  
 }
 
+//Reads rows from the "node_access" database table
 function drupal_conversations_node_grants(AccountInterface $account, $op) {
     
     $grants = array();
@@ -168,13 +211,16 @@ function drupal_conversations_node_grants(AccountInterface $account, $op) {
 
 
 
-
-// Extra safeguard. Controll access to conversation nodes to those who created the node or are referenced to the node
-/**** Problem: Views ignores HOOK_node_access(). This is just a backup ****/
+/**
+ ** Extra safeguard. Restrict access to conversation nodes to those who created it or are referenced to it.
+ ** Problem: Views ignores HOOK_node_access(). This is just a backup and only fires when the node is fully loaded.
+**/
 function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
     
     //Check if this node is of type 'Conversation'
     if ($node->bundle() == 'conversation') {
+        
+        //Get users from user reference field
         $recipients = $node->get('field_recipient')->getValue();
         $currentUserID = \Drupal::currentUser()->id();
 
@@ -183,7 +229,7 @@ function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op,
 
             foreach ($recipients as $recipient) {
 
-                //Validate referenced users ID's, and node owner ID, to allow access
+                //Check if current user is owner or is referenced to node and allow access
                 if ($recipient['target_id'] == $account->id() || $currentUserID == $node->getOwnerId()) {
                     return AccessResult::allowed()->cachePerUser()->cacheUntilEntityChanges($node);
                 }
@@ -209,6 +255,10 @@ function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op,
 
 
 
+
+/**
+ ** Automatically populate the node title for conversation type nodes.
+**/
 
 function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 

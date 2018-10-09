@@ -1,11 +1,13 @@
 <article{{ attributes.addClass('js-comment') }} id="conversation-message-wrapper">
     
-    <span class="conversation-date">{{ comment.created.0.value | date('F j') }} at {{ comment.created.0.value | date('h:i a') }}</span>
+    {{ user_picture }}
     
+    <span class="conversation-date">{{ comment.created.0.value | date('d/j/Y') }} at {{ comment.created.0.value | date('h:i a') }}</span>
+        
     <div class="conversation-message">
     
         <mark class="hidden" data-comment-timestamp="{{ new_indicator_timestamp }}"></mark>
-
+        
         {{ content.comment_body }}
     
     </div>

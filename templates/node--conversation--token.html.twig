@@ -1,12 +1,9 @@
 <section class="{{ node.type.0.target_id | clean_class }}-token-wrapper">
     
     <div class="conversation-members">
-        
-        {% if currentUserUID == conversationOwner %}
-            {{ content.field_recipient }}
-        {% else %}
-            {{ author_picture }}
-        {% endif %}
+
+        {{ dump(content.field_conversation_comment['#items'].0 | keys) }}
+        {{ content.field_conversation_comment['#items'].0.last_comment_name }}
         
     </div>
     
