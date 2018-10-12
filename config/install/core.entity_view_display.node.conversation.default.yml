@@ -5,7 +5,6 @@ dependencies:
     - core.entity_view_display.comment.conversation_comment.default
     - field.field.node.conversation.field_conversation_comment
     - field.field.node.conversation.field_recipient
-    - field.storage.node.field_recipient
     - node.type.conversation
   module:
     - comment

@@ -6,7 +6,6 @@ dependencies:
     - core.entity_view_mode.node.teaser
     - field.field.node.conversation.field_conversation_comment
     - field.field.node.conversation.field_recipient
-    - field.storage.node.field_recipient
     - node.type.conversation
   module:
     - comment

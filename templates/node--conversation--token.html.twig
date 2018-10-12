@@ -2,8 +2,8 @@
     
     <div class="conversation-members">
 
-        {{ dump(content.field_conversation_comment['#items'].0 | keys) }}
-        {{ content.field_conversation_comment['#items'].0.last_comment_name }}
+        {{ dump(node | keys) }}
+        {{ content.field_conversation_comment['#items'].0.last_comment_timestamp }}
         
     </div>
     

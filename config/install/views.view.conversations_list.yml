@@ -5,8 +5,8 @@ dependencies:
     - core.entity_view_mode.node.teaser
     - node.type.conversation
   module:
-    - comment
     - node
+    - tracker
     - user
 id: conversations_list
 label: 'Conversations List'
@@ -49,10 +49,26 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       pager:
-        type: none
+        type: full
         options:
-          items_per_page: 0
+          items_per_page: 15
           offset: 0
+          id: 0
+          total_pages: null
+          tags:
+            previous: '<'
+            next: '>'
+            first: '|<'
+            last: '>|'
+          expose:
+            items_per_page: false
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '5, 10, 25, 50'
+            items_per_page_options_all: false
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 0
       style:
         type: default
       row:
@@ -129,6 +145,45 @@ display:
           entity_type: node
           entity_field: type
           plugin_id: bundle
+        uid:
+          id: uid
+          table: tracker_user
+          field: uid
+          relationship: none
+          group_type: group
+          admin_label: ''
+          operator: in
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: uid_op
+            label: Name
+            description: ''
+            use_operator: false
+            operator: uid_op
+            identifier: uid
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              site_manager: '0'
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          plugin_id: user_name
       sorts:
         created:
           id: created
@@ -150,40 +205,7 @@ display:
       footer: {  }
       empty: {  }
       relationships: {  }
-      arguments:
-        uid_touch:
-          id: uid_touch
-          table: node_field_data
-          field: uid_touch
-          relationship: none
-          group_type: group
-          admin_label: ''
-          default_action: default
-          exception:
-            value: all
-            title_enable: false
-            title: All
-          title_enable: false
-          title: ''
-          default_argument_type: current_user
-          default_argument_options: {  }
-          default_argument_skip_url: false
-          summary_options:
-            base_path: ''
-            count: true
-            items_per_page: 25
-            override: false
-          summary:
-            sort_order: asc
-            number_of_records: 0
-            format: default_summary
-          specify_validation: false
-          validate:
-            type: none
-            fail: 'not found'
-          validate_options: {  }
-          entity_type: node
-          plugin_id: argument_comment_user_uid
+      arguments: {  }
       display_extenders: {  }
       use_ajax: true
     cache_metadata:
@@ -192,7 +214,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - user
+        - url.query_args
         - 'user.node_grants:view'
         - user.permissions
       tags: {  }
@@ -218,7 +240,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - user
+        - url.query_args
         - 'user.node_grants:view'
         - user.permissions
       tags: {  }

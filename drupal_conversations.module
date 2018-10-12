@@ -123,6 +123,7 @@ function drupal_conversations_preprocess_node(&$variables) {
  ** Adds rows to the "node_access" database table.
  ** Realm and GID are arbitrary, they just need to match with the node grants below.
 **/
+
 function drupal_conversations_node_access_records(NodeInterface $node) {
     
     //Check if this node is of type 'Conversation'
@@ -215,6 +216,7 @@ function drupal_conversations_node_grants(AccountInterface $account, $op) {
  ** Extra safeguard. Restrict access to conversation nodes to those who created it or are referenced to it.
  ** Problem: Views ignores HOOK_node_access(). This is just a backup and only fires when the node is fully loaded.
 **/
+
 function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
     
     //Check if this node is of type 'Conversation'
@@ -257,7 +259,7 @@ function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op,
 
 
 /**
- ** Automatically populate the node title for conversation type nodes.
+ ** Modify the add node form for conversations.
 **/
 
 function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
@@ -302,16 +304,32 @@ function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $f
 
 
 
+/**
+ ** Automatically populate the node title for conversation type nodes.
+**/
+
 function drupal_conversations_node_builder($entity_type, NodeInterface $node, $form, FormStateInterface $form_state) {
     
-    $recipients = $node->field_recipient->getValue();
-    $recipientIDList = '';
-    foreach ($recipients as $recipient) {
-        $recipientIDList .= '_' . $recipient['target_id'];
+    //Check if this node is of type 'Conversation'
+    if ($node->bundle() == 'conversation') {
+        
+        $recipients = $node->field_recipient->getValue();
+        $userNameList = '';
+
+        foreach ($recipients as $recipient) {
+            $userObject = \Drupal\user\Entity\User::load($recipient['target_id']);        
+            $userNameList .= '_' . $userObject->name->value;
+//            $recipientIDList .= $recipient['target_id']; //For custom node id
+        }
+
+        $owner = \Drupal\user\Entity\User::load($node->getOwnerId());
+        $ownerName = $owner->name->value;        
+
+//        $node->nid->value = '411' . $node->getOwnerId() . $recipientIDList; //For custom node id
+        $node->setTitle('conversation_' . $ownerName . $userNameList);
+        
     }
     
-    $node->setTitle('conversation_' . \Drupal::currentUser()->id() . $recipientIDList);
-
 }
 
 
