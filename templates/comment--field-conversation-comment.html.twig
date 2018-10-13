@@ -1,11 +1,13 @@
 <article{{ attributes.addClass('js-comment') }} id="conversation-message-wrapper">
     
     <span class="conversation-date">
-        {% if user_picture['#user'].field_user_first_name.0.value %}
-            {{ user_picture['#user'].field_user_first_name.0.value }} - 
-        {% else %}
-            {{ user_picture['#user'].name.0.value }} - 
-        {% endif %}
+        <span class="senders-name">
+            {% if user_picture['#user'].field_user_first_name.0.value %}
+                {{ user_picture['#user'].field_user_first_name.0.value }} - 
+            {% else %}
+                {{ user_picture['#user'].name.0.value }} - 
+            {% endif %}
+        </span>
         {{ comment.created.0.value | date('d/j/Y') }} at {{ comment.created.0.value | date('h:i a') }}
     </span>
         
