@@ -89,10 +89,14 @@ function drupal_conversations_preprocess_node(&$variables) {
     //Check if this node is of type 'Conversation'
     if ($variables['node']->bundle() == 'conversation') {
         
+        //Get current user ID
         $currentUserUID = \Drupal::currentUser()->id();
+        //Get user reference field value
         $recipients = $variables['node']->get('field_recipient')->getValue();
+        //Instantiate our useable user list variable
         $conversationUserList = array();
         
+        //Create our useable user list, minus the current user
         foreach ($recipients as $recipient) {
 
             if ($recipient['target_id'] != $currentUserUID) {
@@ -101,12 +105,15 @@ function drupal_conversations_preprocess_node(&$variables) {
             
         }
         
+        //Add the node author to our user list, if not current user
         if ($variables['node']->getOwnerId() != $currentUserUID) {
             $conversationUserList[] = \Drupal\user\Entity\User::load($variables['node']->getOwnerId());
         }
 
+        //Create a final renderable array of our user list for twig
         $variables['conversationUserList'] = \Drupal::entityTypeManager()->getViewBuilder('user')->viewMultiple($conversationUserList, 'compact');
         
+        //**-> beginning work on notification of new comments in HOOK_preprocess_node() still needs work
         $variables['lastCommentTimestamp'] = $variables['elements']['#node']->field_conversation_comment->last_comment_timestamp;
                 
 //        if ($variables['elements']['#node']->field_conversation_comment->last_comment_timestamp > \Drupal::currentUser()->getLastAccessedTime()) {
@@ -123,7 +130,7 @@ function drupal_conversations_preprocess_node(&$variables) {
             '#lazy_builder' => [drupal_conversations_preprocess_user(), []],
             '#create_placeholder' => TRUE,
         ];
-        kpr($variables['content']['timestamp']['#lazy_builder'][0]['#markup']);
+//        kpr($variables['content']['timestamp']['#lazy_builder'][0]['#markup']);
         
     }
             
@@ -142,7 +149,7 @@ function drupal_conversations_preprocess_node(&$variables) {
  */
 function drupal_conversations_preprocess_user() {
   $timestamp = \Drupal::currentUser()->getLastAccessedTime();
-    kpr(\Drupal::currentUser());
+//    kpr(\Drupal::currentUser());
   return [
     '#markup' => $timestamp,
     '#cache' => ['max-age' => 0],
@@ -352,19 +359,21 @@ function drupal_conversations_node_builder($entity_type, NodeInterface $node, $f
     //Check if this node is of type 'Conversation'
     if ($node->bundle() == 'conversation') {
         
+        //Get the user reference field value
         $recipients = $node->field_recipient->getValue();
         $userNameList = '';
 
+        //Create a useable list of users
         foreach ($recipients as $recipient) {
             $userObject = \Drupal\user\Entity\User::load($recipient['target_id']);        
             $userNameList .= '_' . $userObject->name->value;
-//            $recipientIDList .= $recipient['target_id']; //For custom node id
         }
 
+        //Get the node owner
         $owner = \Drupal\user\Entity\User::load($node->getOwnerId());
         $ownerName = $owner->name->value;        
 
-//        $node->nid->value = '411' . $node->getOwnerId() . $recipientIDList; //For custom node id
+        //Add node owner and referenced users to the node title
         $node->setTitle('conversation_' . $ownerName . $userNameList);
         
     }
