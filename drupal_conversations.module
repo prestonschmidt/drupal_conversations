@@ -8,6 +8,7 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity;
 
 
 
@@ -21,11 +22,11 @@ use Drupal\Core\Form\FormStateInterface;
  ** Add our styles library.
 **/
 
-function drupal_conversations_preprocess_page(&$variables) {
-    
-    $variables['#attached']['library'][] = 'drupal_conversations/styles';
-    
-}
+//function drupal_conversations_preprocess_page(&$variables) {
+//    
+//    $variables['#attached']['library'][] = 'drupal_conversations/styles';
+//    
+//}
 
 
 
@@ -106,8 +107,46 @@ function drupal_conversations_preprocess_node(&$variables) {
 
         $variables['conversationUserList'] = \Drupal::entityTypeManager()->getViewBuilder('user')->viewMultiple($conversationUserList, 'compact');
         
+        $variables['lastCommentTimestamp'] = $variables['elements']['#node']->field_conversation_comment->last_comment_timestamp;
+                
+//        if ($variables['elements']['#node']->field_conversation_comment->last_comment_timestamp > \Drupal::currentUser()->getLastAccessedTime()) {
+//            $variables['nodeHasNewComments'] = 1;
+//        }
+//        else {
+//            $variables['nodeHasNewComments'] = 0;
+//        }
+        
+//        kpr($variables['elements']['#node']->field_conversation_comment->last_comment_timestamp);
+//        kpr(\Drupal::currentUser()->getLastAccessedTime());
+        
+        $variables['content']['timestamp'] = [
+            '#lazy_builder' => [drupal_conversations_preprocess_user(), []],
+            '#create_placeholder' => TRUE,
+        ];
+        kpr($variables['content']['timestamp']['#lazy_builder'][0]['#markup']);
+        
     }
             
+}
+
+
+
+
+
+
+
+
+
+/**
+ * #lazy_builder callback; builds timestamp markup with current user access time.
+ */
+function drupal_conversations_preprocess_user() {
+  $timestamp = \Drupal::currentUser()->getLastAccessedTime();
+    kpr(\Drupal::currentUser());
+  return [
+    '#markup' => $timestamp,
+    '#cache' => ['max-age' => 0],
+  ];
 }
 
 

@@ -1,5 +1,5 @@
 name: Drupal Conversations
-description: 'Start a conversation with other users. Extends the Comments module. '
+description: 'Start conversations with other users. Extends the "Comment" module. '
 type: module
 core: 8.x
 package: 'Prototype Suite'
@@ -7,5 +7,6 @@ dependencies:
   - better_exposed_filters
   - comment
   - node
+  - pathauto
   - user
   - views

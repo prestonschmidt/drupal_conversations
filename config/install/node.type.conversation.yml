@@ -9,7 +9,7 @@ third_party_settings:
     parent: ''
 name: Conversation
 type: conversation
-description: ''
+description: 'Create a conversation. '
 help: ''
 new_revision: true
 preview_mode: 0

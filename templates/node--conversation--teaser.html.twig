@@ -1,7 +1,7 @@
-<section class="{{ node.type.0.target_id | clean_class }}-teaser-wrapper">
+<section class="{{ node.type.0.target_id | clean_class }}-teaser-wrapper{% if nodeHasNewComments == 1 %} new-comments{% endif %}">
 
     <div class="conversation-members">
-        
+        <p>{{ lastViewTimestampByUser }}</p>   
         {{ conversationUserList }}
                 
     </div>

@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: conversation_path_pattern
+label: 'Conversation Path Pattern'
+type: 'canonical_entities:node'
+pattern: 'conversation/[current-page:title]'
+selection_criteria:
+  9201908d-fdec-45fd-b245-82ffbbec5f45:
+    id: node_type
+    bundles:
+      conversation: conversation
+    negate: false
+    context_mapping:
+      node: node
+selection_logic: and
+weight: -5
+relationships: {  }
