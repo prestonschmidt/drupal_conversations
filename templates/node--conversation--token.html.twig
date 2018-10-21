@@ -1,12 +1,7 @@
 <section class="{{ node.type.0.target_id | clean_class }}-token-wrapper">
-    
-    <div class="conversation-members">
 
-        {{ dump(node | keys) }}
-        {{ content.field_conversation_comment['#items'].0.last_comment_timestamp }}
-        
+    <div class="conversation-members">
+        {{ conversationUserList }}
     </div>
-    
-    <a class="conversation-token-link" href="{{ url }}#comment-{{ content.field_conversation_comment['#items'].0.cid }}"></a>
-    
+                    
 </section>
