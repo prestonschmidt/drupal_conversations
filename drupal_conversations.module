@@ -19,24 +19,6 @@ use Drupal\user\Entity;
 
 
 /**
- ** Add our styles library.
-**/
-
-function drupal_conversations_preprocess_page(&$variables) {
-    
-    $variables['#attached']['library'][] = 'drupal_conversations/styles';
-    
-}
-
-
-
-
-
-
-
-
-
-/**
  ** This adds the template files we need to our theme.
 **/
 
