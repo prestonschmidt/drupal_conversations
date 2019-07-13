@@ -85,20 +85,6 @@ function drupal_conversations_preprocess_node(&$variables) {
 
 }
 
-/**
- * #lazy_builder callback; builds timestamp markup with current user access time.
- */
-// function drupal_conversations_preprocess_user(&$variables) {
-
-//   $timestamp = $variables['elements']['#user']->access->value;
-
-//   $variables['drupal_conversations_timestamp_current_user'] = [
-//     '#markup' => $timestamp,
-//     '#cache' => ['max-age' => 0],
-//   ];
-
-// }
-
 /** 
  ** Ensure only the node owner and referenced users can access Conversation entities.
  ** Adds rows to the "node_access" database table.
