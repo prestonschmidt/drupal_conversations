@@ -11,7 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity;
 
 /**
- ** This adds the template files we need to our theme.
+ ** Add the template files we need to our theme.
 **/
 function drupal_conversations_theme($existing, $type, $theme, $path) {
   
@@ -56,7 +56,7 @@ function drupal_conversations_preprocess_node(&$variables) {
     // Get current user ID.
     $currentUserUID = \Drupal::currentUser()->id();
 
-    // Get user reference field value.
+    // Get referenced users.
     $recipients = $variables['node']
       ->get('field_recipient')->getValue();
 
@@ -116,10 +116,14 @@ function drupal_conversations_node_access_records(NodeInterface $node) {
 
     // Get referenced users.
     $recipients = $node->get('field_recipient')->getValue();
+
+    // Instantiate $grants array.
     $grants = [];
 
+    // Check that node is published.
     if ($node->isPublished()) {
 
+      // Loop through referenced users.
       foreach ($recipients as $recipient) {
 
         // Create "view" access for referenced users.
@@ -136,6 +140,7 @@ function drupal_conversations_node_access_records(NodeInterface $node) {
 
     }
 
+    // Get node owner user ID.
     if ($node->getOwnerId()) {
 
       // Create "view and update" access for node owner.
@@ -207,8 +212,10 @@ function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $f
       '#markup' => t('<h2>Add recipient(s), then start your conversation.</h2>'),
     ];
 
-    // Call the node_builder function.
+    // Hide node title.
     $form['title']['#access'] = FALSE;
+
+    // Call the node_builder function.
     $form['#entity_builders'][] = 'drupal_conversations_node_builder';
 
     // Change the add user button text.
@@ -238,19 +245,21 @@ function drupal_conversations_node_builder($entity_type, NodeInterface $node, $f
 
     // Get the user reference field value.
     $recipients = $node->field_recipient->getValue();
+
+    // Instantiate $userNameList.
     $userNameList = '';
 
-    // Create a useable list of users.
+    // Create a list of users.
     foreach ($recipients as $recipient) {
       $userObject = \Drupal\user\Entity\User::load($recipient['target_id']);    
       $userNameList .= '_' . $userObject->name->value;
     }
 
-    // Get the node owner.
+    // Get the node owners name.
     $owner = \Drupal\user\Entity\User::load($node->getOwnerId());
     $ownerName = $owner->name->value;    
 
-    // Add node owner and referenced users to the node title.
+    // Set node owner and referenced users as the node title.
     $node->setTitle('conversation_' . $ownerName . $userNameList);
 
   }
