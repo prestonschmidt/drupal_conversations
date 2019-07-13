@@ -60,7 +60,7 @@ function drupal_conversations_preprocess_node(&$variables) {
     $recipients = $variables['node']
       ->get('field_recipient')->getValue();
 
-    // Instantiate our useable user list variable.
+    // Instantiate $conversationUserList.
     $conversationUserList = [];
 
     // Create our useable user list, minus the current user.
@@ -81,11 +81,6 @@ function drupal_conversations_preprocess_node(&$variables) {
       ->getViewBuilder('user')
       ->viewMultiple($conversationUserList, 'compact');
 
-    //**-> beginning work on notification of new comments in HOOK_preprocess_node() still needs work.
-    $variables['lastCommentTimestamp'] = $variables['elements']['#node']
-      ->field_conversation_comment
-      ->last_comment_timestamp;
-
   }
 
 }
@@ -93,16 +88,16 @@ function drupal_conversations_preprocess_node(&$variables) {
 /**
  * #lazy_builder callback; builds timestamp markup with current user access time.
  */
-function drupal_conversations_preprocess_user(&$variables) {
+// function drupal_conversations_preprocess_user(&$variables) {
 
-  $timestamp = $variables['elements']['#user']->access->value;
+//   $timestamp = $variables['elements']['#user']->access->value;
 
-  $variables['drupal_conversations_timestamp_current_user'] = [
-    '#markup' => $timestamp,
-    '#cache' => ['max-age' => 0],
-  ];
+//   $variables['drupal_conversations_timestamp_current_user'] = [
+//     '#markup' => $timestamp,
+//     '#cache' => ['max-age' => 0],
+//   ];
 
-}
+// }
 
 /** 
  ** Ensure only the node owner and referenced users can access Conversation entities.
@@ -220,12 +215,12 @@ function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $f
 
     // Change the add user button text.
     if ( isset($form['field_recipient']['widget']['add_more']['#value']) ) {
-       $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
+      $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
     }
 
     // Change the submit button text.
     if ( isset($form['actions']['submit']) ) {
-       $form['actions']['submit']['#value'] = t('Start Conversation');
+      $form['actions']['submit']['#value'] = t('Start Conversation');
     }
 
   }
@@ -240,7 +235,7 @@ function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $f
 **/
 function drupal_conversations_node_builder($entity_type, NodeInterface $node, $form, FormStateInterface $form_state) {
 
-  // Check if this node is of type 'Conversation'.
+  // Check if this node is of type 'conversation'.
   if ($node->bundle() == 'conversation') {
 
     // Get the user reference field value.
@@ -249,15 +244,15 @@ function drupal_conversations_node_builder($entity_type, NodeInterface $node, $f
     // Instantiate $userNameList.
     $userNameList = '';
 
-    // Create a list of users.
+    // Create a list of referenced users.
     foreach ($recipients as $recipient) {
-      $userObject = \Drupal\user\Entity\User::load($recipient['target_id']);    
-      $userNameList .= '_' . $userObject->name->value;
+      $userNameList = \Drupal\user\Entity\User::load($recipient['target_id'])
+        ->name->value;    
     }
 
     // Get the node owners name.
-    $owner = \Drupal\user\Entity\User::load($node->getOwnerId());
-    $ownerName = $owner->name->value;    
+    $ownerName = \Drupal\user\Entity\User::load($node->getOwnerId())
+      ->name->value;
 
     // Set node owner and referenced users as the node title.
     $node->setTitle('conversation_' . $ownerName . $userNameList);
