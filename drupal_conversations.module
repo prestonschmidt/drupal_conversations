@@ -10,350 +10,249 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity;
 
-
-
-
-
-
-
-
-
 /**
  ** This adds the template files we need to our theme.
 **/
-
 function drupal_conversations_theme($existing, $type, $theme, $path) {
-    
-    return [
-        'node__conversation' => [
-          'template' => 'node--conversation',
-          'base hook' => 'node',
-        ],
-        'node__conversation__teaser' => [
-          'template' => 'node--conversation--teaser',
-          'base hook' => 'node',
-        ],
-        'node__conversation__token' => [
-          'template' => 'node--conversation--token',
-          'base hook' => 'node',
-        ],
-        'field__field_conversation_comment' => [
-          'template' => 'field--field-conversation-comment',
-          'base hook' => 'field',
-        ],
-        'field__field_recipient' => [
-          'template' => 'field--field-recipient',
-          'base hook' => 'field',
-        ],
-        'comment__field_conversation_comment' => [
-          'template' => 'comment--field-conversation-comment',
-          'base hook' => 'field',
-        ],
-      ];
-    
+  
+  return [
+    'node__conversation' => [
+      'template' => 'node--conversation',
+      'base hook' => 'node',
+    ],
+    'node__conversation__teaser' => [
+      'template' => 'node--conversation--teaser',
+      'base hook' => 'node',
+    ],
+    'node__conversation__token' => [
+      'template' => 'node--conversation--token',
+      'base hook' => 'node',
+    ],
+    'field__field_conversation_comment' => [
+      'template' => 'field--field-conversation-comment',
+      'base hook' => 'field',
+    ],
+    'field__field_recipient' => [
+      'template' => 'field--field-recipient',
+      'base hook' => 'field',
+    ],
+    'comment__field_conversation_comment' => [
+      'template' => 'comment--field-conversation-comment',
+      'base hook' => 'field',
+    ],
+  ];
+  
 }
 
-
-
-
-
-
-
-
-
-/**
- ** Build array of users associated to this node and filter out the current user, then build a printable array.
- ** This will allow us to render our conversation users in our twig templates.
-**/
-
+/*
+ * Build array of users associated to this node and filter out the current user, then build a printable array.
+ * This will allow us to render our conversation users in our twig templates.
+*/
 function drupal_conversations_preprocess_node(&$variables) {
 
-    //Check if this node is of type 'Conversation'
-    if ($variables['node']->bundle() == 'conversation') {
-        
-        //Get current user ID
-        $currentUserUID = \Drupal::currentUser()->id();
-        //Get user reference field value
-        $recipients = $variables['node']->get('field_recipient')->getValue();
-        //Instantiate our useable user list variable
-        $conversationUserList = array();
-        
-        //Create our useable user list, minus the current user
-        foreach ($recipients as $recipient) {
+  // Check if this node is of type 'Conversation'.
+  if ($variables['node']->bundle() == 'conversation') {
 
-            if ($recipient['target_id'] != $currentUserUID) {
-                $conversationUserList[] = \Drupal\user\Entity\User::load($recipient['target_id']);
-            }
-            
-        }
-        
-        //Add the node author to our user list, if not current user
-        if ($variables['node']->getOwnerId() != $currentUserUID) {
-            $conversationUserList[] = \Drupal\user\Entity\User::load($variables['node']->getOwnerId());
-        }
+    // Get current user ID.
+    $currentUserUID = \Drupal::currentUser()->id();
 
-        //Create a final renderable array of our user list for twig
-        $variables['conversationUserList'] = \Drupal::entityTypeManager()->getViewBuilder('user')->viewMultiple($conversationUserList, 'compact');
-        
-        //**-> beginning work on notification of new comments in HOOK_preprocess_node() still needs work
-        $variables['lastCommentTimestamp'] = $variables['elements']['#node']->field_conversation_comment->last_comment_timestamp;
-        
+    // Get user reference field value.
+    $recipients = $variables['node']
+      ->get('field_recipient')->getValue();
+
+    // Instantiate our useable user list variable.
+    $conversationUserList = [];
+
+    // Create our useable user list, minus the current user.
+    foreach ($recipients as $recipient) {
+      if ($recipient['target_id'] != $currentUserUID) {
+        $conversationUserList[] = \Drupal\user\Entity\User::load($recipient['target_id']);
+      }
     }
-            
+
+    // Add the node author to our user list, if not current user.
+    if ($variables['node']->getOwnerId() != $currentUserUID) {
+      $conversationUserList[] = \Drupal\user\Entity\User::load($variables['node']
+        ->getOwnerId());
+    }
+
+    // Create a final renderable array of our user list for twig.
+    $variables['conversationUserList'] = \Drupal::entityTypeManager()
+      ->getViewBuilder('user')
+      ->viewMultiple($conversationUserList, 'compact');
+
+    //**-> beginning work on notification of new comments in HOOK_preprocess_node() still needs work.
+    $variables['lastCommentTimestamp'] = $variables['elements']['#node']
+      ->field_conversation_comment
+      ->last_comment_timestamp;
+
+  }
+
 }
-
-
-
-
-
-
-
-
 
 /**
  * #lazy_builder callback; builds timestamp markup with current user access time.
  */
 function drupal_conversations_preprocess_user(&$variables) {
 
-    $timestamp = $variables['elements']['#user']->access->value;
+  $timestamp = $variables['elements']['#user']->access->value;
 
-    $variables['drupal_conversations_timestamp_current_user'] = [
-        '#markup' => $timestamp,
-        '#cache' => ['max-age' => 0],
-    ];
-            
+  $variables['drupal_conversations_timestamp_current_user'] = [
+    '#markup' => $timestamp,
+    '#cache' => ['max-age' => 0],
+  ];
+
 }
-
-
-
-
-
-
-
-
 
 /** 
  ** Ensure only the node owner and referenced users can access Conversation entities.
  ** Adds rows to the "node_access" database table.
  ** Realm and GID are arbitrary, they just need to match with the node grants below.
 **/
-
 function drupal_conversations_node_access_records(NodeInterface $node) {
-    
-    //Check if this node is of type 'Conversation'
-    if ($node->bundle() == 'conversation') {
-        
-        //Get referenced users
-        $recipients = $node->get('field_recipient')->getValue();
-        $grants = array();
-        
-        if ($node->isPublished()) {
-            
-            foreach ($recipients as $recipient) {
 
-                //Create "view" access for referenced users
-                $grants[] = array(
-                    'realm' => 'drupal_conversations',
-                    'gid' => $recipient['target_id'],
-                    'grant_view' => 1,
-                    'grant_update' => 0,
-                    'grant_delete' => 0,
-                    'langcode' => 'en',
-                );
+  // Check if this node is of type 'Conversation'.
+  if ($node->bundle() == 'conversation') {
 
-            }
-            
-        }
-        
-        if ($node->getOwnerId()) {
-            //Create "view and update" access for node owner
-            $grants[] = array(
-                'realm' => 'drupal_conversations_owner',
-                'gid' => $node->getOwnerId(),
-                'grant_view' => 1,
-                'grant_update' => 1,
-                'grant_delete' => 0,
-                'langcode' => 'en',
-            );
-        }
-        
-        //Create "full" access for administrator
-        $grants[] = array(
-            'realm' => 'drupal_conversations_admin',
-            'gid' => 0, // This is the admin GID, not the $account->uid associated with anonymous
-            'grant_view' => 1,
-            'grant_update' => 1,
-            'grant_delete' => 1,
-            'langcode' => 'en',
-        );
-        
-        return $grants;
+    // Get referenced users.
+    $recipients = $node->get('field_recipient')->getValue();
+    $grants = [];
+
+    if ($node->isPublished()) {
+
+      foreach ($recipients as $recipient) {
+
+        // Create "view" access for referenced users.
+        $grants[] = [
+          'realm' => 'drupal_conversations',
+          'gid' => $recipient['target_id'],
+          'grant_view' => 1,
+          'grant_update' => 0,
+          'grant_delete' => 0,
+          'langcode' => 'en',
+        ];
+
+      }
 
     }
- 
-}
 
-//Reads rows from the "node_access" database table
-function drupal_conversations_node_grants(AccountInterface $account, $op) {
-    
-    $grants = array();
-    
-    //Apply view access to referenced users
-    $grants['drupal_conversations'] = array(
-        $account->id(),
-    );
-    
-    //Apply view and update access to node owner
-    $grants['drupal_conversations_owner'] = array(
-        $account->id(),
-    );
-    
-    //Always give administrator full access
-    if (in_array('administrator', $account->getRoles())) {
-        // gid to view, update, delete
-        $grants['drupal_conversations_admin'][] = 0;
-        return $grants;
+    if ($node->getOwnerId()) {
+
+      // Create "view and update" access for node owner.
+      $grants[] = [
+        'realm' => 'drupal_conversations_owner',
+        'gid' => $node->getOwnerId(),
+        'grant_view' => 1,
+        'grant_update' => 1,
+        'grant_delete' => 0,
+        'langcode' => 'en',
+      ];
     }
-    
+
+    // Create "full" access for administrator.
+    $grants[] = [
+      'realm' => 'drupal_conversations_admin',
+      'gid' => 0, // This is the admin GID, not the $account->uid associated with anonymous.
+      'grant_view' => 1,
+      'grant_update' => 1,
+      'grant_delete' => 1,
+      'langcode' => 'en',
+    ];
+
     return $grants;
-    
+
+  }
+
 }
 
+// Reads rows from the "node_access" database table.
+function drupal_conversations_node_grants(AccountInterface $account, $op) {
 
+  $grants = [];
 
+  // Apply view access to referenced users.
+  $grants['drupal_conversations'] = [
+    $account->id(),
+  ];
 
+  // Apply view and update access to node owner.
+  $grants['drupal_conversations_owner'] = [
+    $account->id(),
+  ];
 
+  // Always give administrator full access
+  if (in_array('administrator', $account->getRoles())) {
+    // gid to view, update, delete.
+    $grants['drupal_conversations_admin'][] = 0;
+    return $grants;
+  }
 
+  return $grants;
 
-
-/**
- ** Extra safeguard. Restrict access to conversation nodes to those who created it or are referenced to it.
- ** Problem: Views ignores HOOK_node_access(). This is just a backup and only fires when the node is fully loaded.
-**/
-
-function drupal_conversations_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
-    
-    //Check if this node is of type 'Conversation'
-    if ($node->bundle() == 'conversation') {
-        
-        //Get users from user reference field
-        $recipients = $node->get('field_recipient')->getValue();
-        $currentUserID = \Drupal::currentUser()->id();
-
-        //Check if there are recipients
-        if (!empty($recipients)) {
-
-            foreach ($recipients as $recipient) {
-
-                //Check if current user is owner or is referenced to node and allow access
-                if ($recipient['target_id'] == $account->id() || $currentUserID == $node->getOwnerId()) {
-                    return AccessResult::allowed()->cachePerUser()->cacheUntilEntityChanges($node);
-                }
-
-            }
-
-        }
-
-        //Deny access
-        return AccessResult::forbidden()->cachePerUser()->cacheUntilEntityChanges($node);
-
-    }
-
-    //Not a Conversation node, proceed with normal access permissions
-    return AccessResult::neutral();
-    
 }
-
-
-
-
-
-
-
-
 
 /**
  ** Modify the add node form for conversations.
 **/
-
 function drupal_conversations_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
-    $nodeAddForm = $form_state->getFormObject()->getEntity();
-    
-    if ($nodeAddForm->isNew() && $form_id == 'node_conversation_form') {
+  $nodeAddForm = $form_state->getFormObject()->getEntity();
 
-        //Add custom form elements
-        $form['drupal_conversations_heading'] = [
-            '#type' => 'item',
-            '#weight' => -10,
-            '#markup' => t('<h2>Add recipient(s), then start your conversation.</h2>'),
-        ];
-        
-        //Call the node_builder function
-        $form['title']['#access'] = FALSE;
-        $form['#entity_builders'][] = 'drupal_conversations_node_builder';
-        
-        //Change the add user button text
-        if ( isset($form['field_recipient']['widget']['add_more']['#value']) ) {
-           $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
-        }
-        
-        //Change the submit button text
-        if ( isset($form['actions']['submit']) ) {
-           $form['actions']['submit']['#value'] = t('Start Conversation');
-        }
-                
+  if ($nodeAddForm->isNew() && $form_id == 'node_conversation_form') {
+
+    // Add custom form elements.
+    $form['drupal_conversations_heading'] = [
+      '#type' => 'item',
+      '#weight' => -10,
+      '#markup' => t('<h2>Add recipient(s), then start your conversation.</h2>'),
+    ];
+
+    // Call the node_builder function.
+    $form['title']['#access'] = FALSE;
+    $form['#entity_builders'][] = 'drupal_conversations_node_builder';
+
+    // Change the add user button text.
+    if ( isset($form['field_recipient']['widget']['add_more']['#value']) ) {
+       $form['field_recipient']['widget']['add_more']['#value'] = t('Add another recipient');
     }
-    else {
-        // This is not a new node.
+
+    // Change the submit button text.
+    if ( isset($form['actions']['submit']) ) {
+       $form['actions']['submit']['#value'] = t('Start Conversation');
     }
-    
+
+  }
+  else {
+    // This is not a new node.
+  }
+
 }
-
-
-
-
-
-
-
-
 
 /**
  ** Automatically populate the node title for conversation type nodes.
 **/
-
 function drupal_conversations_node_builder($entity_type, NodeInterface $node, $form, FormStateInterface $form_state) {
-    
-    //Check if this node is of type 'Conversation'
-    if ($node->bundle() == 'conversation') {
-        
-        //Get the user reference field value
-        $recipients = $node->field_recipient->getValue();
-        $userNameList = '';
 
-        //Create a useable list of users
-        foreach ($recipients as $recipient) {
-            $userObject = \Drupal\user\Entity\User::load($recipient['target_id']);        
-            $userNameList .= '_' . $userObject->name->value;
-        }
+  // Check if this node is of type 'Conversation'.
+  if ($node->bundle() == 'conversation') {
 
-        //Get the node owner
-        $owner = \Drupal\user\Entity\User::load($node->getOwnerId());
-        $ownerName = $owner->name->value;        
+    // Get the user reference field value.
+    $recipients = $node->field_recipient->getValue();
+    $userNameList = '';
 
-        //Add node owner and referenced users to the node title
-        $node->setTitle('conversation_' . $ownerName . $userNameList);
-        
+    // Create a useable list of users.
+    foreach ($recipients as $recipient) {
+      $userObject = \Drupal\user\Entity\User::load($recipient['target_id']);    
+      $userNameList .= '_' . $userObject->name->value;
     }
-    
+
+    // Get the node owner.
+    $owner = \Drupal\user\Entity\User::load($node->getOwnerId());
+    $ownerName = $owner->name->value;    
+
+    // Add node owner and referenced users to the node title.
+    $node->setTitle('conversation_' . $ownerName . $userNameList);
+
+  }
+
 }
-
-
-
-
-
-
-
-
-
-?>

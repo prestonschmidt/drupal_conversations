@@ -10,7 +10,7 @@ id: node.conversation.field_conversation_comment
 field_name: field_conversation_comment
 entity_type: node
 bundle: conversation
-label: 'Conversation Comment'
+label: 'Message'
 description: ''
 required: false
 translatable: false

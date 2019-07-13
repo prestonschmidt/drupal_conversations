@@ -10,7 +10,7 @@ id: comment.conversation_comment.comment_body
 field_name: comment_body
 entity_type: comment
 bundle: conversation_comment
-label: Comment
+label: 'Message'
 description: ''
 required: true
 translatable: true

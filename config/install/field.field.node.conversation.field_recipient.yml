@@ -8,7 +8,7 @@ id: node.conversation.field_recipient
 field_name: field_recipient
 entity_type: node
 bundle: conversation
-label: Recipient
+label: 'Recipient'
 description: ''
 required: false
 translatable: false
